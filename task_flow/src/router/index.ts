@@ -1,9 +1,8 @@
-// router/index.ts
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import Login from '../components/LoginComponent.vue';
 import Register from '../components/RegisterComponent.vue';
-import HomeView from '../views/HomeView.vue'; // Asegúrate de importar HomeView correctamente
+import HomeView from '../views/HomeView.vue';
 
 const routes = [
   { path: '/login', component: Login },

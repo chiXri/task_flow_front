@@ -17,7 +17,7 @@
 
 <script lang="ts">
 import { defineComponent, ref } from 'vue';
-import { useRouter } from 'vue-router'; // Importa useRouter
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 
 export default defineComponent({
@@ -25,18 +25,17 @@ export default defineComponent({
     const authStore = useAuthStore();
     const username = ref('');
     const password = ref('');
-    const router = useRouter(); // Define el router
+    const router = useRouter();
 
     const handleRegister = async () => {
       try {
         const response = await authStore.register(username.value, password.value);
-        console.log('Registration successful:', response); // Log de éxito
-        router.push('/login'); // Redirigir al inicio de sesión
+        console.log('Registration successful:', response);
+        router.push('/login');
       } catch (error) {
         console.error('Registration failed');
       }
     };
-    
 
     return {
       username,
