@@ -10,14 +10,14 @@ interface User {
 }
 
 export const useAuthStore = defineStore('auth', () => {
-  const token = ref(localStorage.getItem('token') || '');
+  const token = ref(sessionStorage.getItem('token') || '');
   const user = ref<User | null>(null);
 
   const login = async (username: string, password: string) => {
     try {
       const response = await axiosInstance.post('/api/auth/login', { username, password });
       token.value = response.data;
-      localStorage.setItem('token', token.value);
+      sessionStorage.setItem('token', token.value);
       axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token.value}`;
     } catch (error: unknown) {
       if (isAxiosError(error)) {
@@ -45,7 +45,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const logout = () => {
     token.value = '';
-    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
     delete axiosInstance.defaults.headers.common['Authorization'];
   };
 
