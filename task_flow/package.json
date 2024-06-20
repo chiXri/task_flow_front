@@ -15,11 +15,13 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@mdi/font": "^7.4.47",
     "axios": "^1.7.2",
     "pinia": "^2.1.7",
     "vue": "^3.4.21",
     "vue-cal": "^4.8.1",
-    "vue-router": "^4.3.0"
+    "vue-router": "^4.3.0",
+    "vuetify": "^3.6.9"
   },
   "devDependencies": {
     "@playwright/test": "^1.43.0",
