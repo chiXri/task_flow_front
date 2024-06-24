@@ -62,19 +62,33 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import 'vue-cal/dist/vuecal.css';
 import VueCal from 'vue-cal';
 import { VDialog, VCard, VCardTitle, VCardText, VCardActions, VBtn, VSpacer, VSelect, VSnackbar } from 'vuetify/components';
+import { useTaskStore } from '@/stores/task';
+import { useAuthStore } from '@/stores/auth';
+import axios  from 'axios';
 
-interface Event {
+interface Task {
+  id: number;
   title: string;
-  start: Date;
-  end: Date;
+  description: string;
   category: string;
+  startTime: string;
+  endTime: string;
+  user: { id: number };
 }
 
-const events = ref<Event[]>([]);
+interface CalendarEvent {
+  start: Date;
+  end: Date;
+  title: string;
+  category: string;
+  class: string;
+}
+
+const events = ref<CalendarEvent[]>([]);
 const tasks = ref(['Bienestar', 'Ocio', 'Productividad', 'Tareas']);
 const subTasksMapping = {
   'Bienestar': ['Ejercicio', 'Meditación'],
@@ -93,6 +107,26 @@ const selectedCellDate = ref<Date | null>(null);
 
 const showErrorSnackbar = ref(false);
 const errorMessage = ref('');
+
+const taskStore = useTaskStore();
+const authStore = useAuthStore();
+
+onMounted(async () => {
+  if (authStore.user && authStore.user.id) {
+    try {
+      await taskStore.fetchTasks(authStore.user.id);
+      events.value = taskStore.tasks.map(task => ({
+        start: new Date(task.startTime),
+        end: new Date(task.endTime),
+        title: `<b>${task.category}</b><br>${task.title}`,
+        category: task.category,
+        class: `vuecal__event-category-${task.category}`
+      }));
+    } catch (error) {
+      console.error('Error fetching tasks on mount:', error);
+    }
+  }
+});
 
 const onCellClick = (day: any) => {
   const now = new Date();
@@ -135,29 +169,60 @@ const openSubTaskDialog = () => {
 const closeSubTaskDialog = () => {
   subTaskDialog.value = false;
 };
+const saveEvent = async () => {
+  try {
+    if (selectedCellDate.value && selectedTask.value && selectedSubTask.value) {
+      console.log('Saving event with:', { selectedCellDate, selectedTask, selectedSubTask });
+      
+      const start = new Date(selectedCellDate.value);
+      const end = new Date(start.getTime() + 60 * 60 * 1000);
+      const newTask: Task = {
+        id: 0, // O lo que sea apropiado para una nueva tarea
+        title: selectedSubTask.value!,
+        description: '', // Puedes agregar más detalles aquí
+        category: selectedTask.value!,
+        startTime: start.toISOString(),
+        endTime: end.toISOString(),
+        user: { id: authStore.user!.id } // Asignar el usuario autenticado
+      };
 
-const saveEvent = () => {
-  if (selectedCellDate.value && selectedTask.value && selectedSubTask.value) {
-    const start = new Date(selectedCellDate.value);
-    const end = new Date(start.getTime() + 60 * 60 * 1000);
-    const newEvent = {
-      title: `<b>${selectedTask.value}</b><br>${selectedSubTask.value}`,
-      start,
-      end,
-      category: selectedTask.value
-    };
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      errorMessage.value = 'Las fechas del evento no son válidas.';
+      console.log('New task to save:', newTask);
+
+      const savedTask: Task = await taskStore.saveTask(newTask);
+      console.log('Saved task:', savedTask);
+
+      events.value.push({
+        start: new Date(savedTask.startTime),
+        end: new Date(savedTask.endTime),
+        title: `<b>${savedTask.category}</b><br>${savedTask.title}`,
+        category: savedTask.category,
+        class: `vuecal__event-category-${savedTask.category}`
+      });
+
+      selectedTask.value = null;
+      selectedSubTask.value = null;
+      subTaskDialog.value = false;
+    } else {
+      console.error('Missing data for saving event:', { selectedCellDate, selectedTask, selectedSubTask });
+      errorMessage.value = 'Datos incompletos para guardar el evento.';
       showErrorSnackbar.value = true;
-      console.error('Invalid event dates:', { start, end });
-      return;
     }
-    events.value.push(newEvent);
-    selectedTask.value = null;
-    selectedSubTask.value = null;
+  } catch (error) {
+    // Verifica si el error es de tipo AxiosError
+    if (axios.isAxiosError(error)) {
+      console.error('Error saving event:', error.response?.data || error.message);
+      errorMessage.value = `Error guardando el evento: ${error.response?.data?.message || error.message}`;
+    } else {
+      // Si el error no es de Axios, maneja otro tipo de error
+      console.error('Error saving event:', (error as Error).message);
+      errorMessage.value = `Error guardando el evento: ${(error as Error).message}`;
+      console.error(`Error guardando el evento: ${(error as Error).message}`);
+    }
+    showErrorSnackbar.value = true;
   }
-  subTaskDialog.value = false;
 };
+
+
 </script>
 
 <style scoped>
@@ -171,11 +236,9 @@ const saveEvent = () => {
 </style>
 
 <style>
-
-.vuecal__event{
-  font-size: 0.75rem;}
-
-/* Asegurarse de que los eventos ocupen solo la celda correspondiente */
+.vuecal__event {
+  font-size: 0.75rem;
+}
 
 /* Estilos globales que afectan a vue-cal */
 .vuecal__flex.vuecal__menu {
@@ -188,6 +251,21 @@ const saveEvent = () => {
 
 /* Ajustar la altura de las filas */
 
-
-
+/* Asignar colores pasteles a los eventos según la categoría */
+.vuecal__event-category-Bienestar {
+  background-color: #FFD1DC; /* Rosa pastel */
+  color: black;
+}
+.vuecal__event-category-Ocio {
+  background-color: #FFECB3; /* Amarillo pastel */
+  color: black;
+}
+.vuecal__event-category-Productividad {
+  background-color: #BBDEFB; /* Azul pastel */
+  color: black;
+}
+.vuecal__event-category-Tareas {
+  background-color: #C8E6C9; /* Verde pastel */
+  color: black;
+}
 </style>

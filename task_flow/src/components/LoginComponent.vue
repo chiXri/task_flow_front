@@ -47,6 +47,9 @@ export default defineComponent({
     const handleLogin = async () => {
       try {
         await authStore.login(username.value, password.value);
+        if (authStore.user) {
+          console.log('User logged in:', authStore.user); // Verifica que el usuario está presente
+        }
         router.push('/home');
       } catch (error) {
         console.error('Login failed');
