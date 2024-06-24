@@ -1,16 +1,7 @@
 import { defineStore } from 'pinia';
 import axiosInstance from '@/config/axiosConfig';
-import axios, { isAxiosError } from 'axios'; 
+import  { isAxiosError } from 'axios'; 
 
-interface Task {
-  id: number;
-  title: string;
-  description: string;
-  category: string;
-  startTime: string;
-  endTime: string;
-  user: { id: number };
-}
 
 export const useTaskStore = defineStore('task', {
   state: () => ({

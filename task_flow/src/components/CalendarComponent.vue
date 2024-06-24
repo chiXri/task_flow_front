@@ -70,24 +70,6 @@ import { useTaskStore } from '@/stores/task';
 import { useAuthStore } from '@/stores/auth';
 import axios  from 'axios';
 
-interface Task {
-  id: number;
-  title: string;
-  description: string;
-  category: string;
-  startTime: string;
-  endTime: string;
-  user: { id: number };
-}
-
-interface CalendarEvent {
-  start: Date;
-  end: Date;
-  title: string;
-  category: string;
-  class: string;
-}
-
 const events = ref<CalendarEvent[]>([]);
 const tasks = ref(['Bienestar', 'Ocio', 'Productividad', 'Tareas']);
 const subTasksMapping = {

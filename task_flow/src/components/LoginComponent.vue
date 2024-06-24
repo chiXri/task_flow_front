@@ -15,7 +15,7 @@
           <button type="submit" class="login-button">Login</button>
         </form>
         <div class="toggle-switch-container">
-        <label for="toggle-switch-login">Don't have an account?</label>
+          <label for="toggle-switch-login">Don't have an account?</label>
           <div class="toggle-switch">
             <input type="checkbox" id="toggle-switch-login" @change="toggleRegisterMode" :checked="isRegisterMode">
             <span class="slider"></span>
@@ -24,6 +24,10 @@
       </div>
       <RegisterModalComponent @close="toggleRegisterMode" v-if="isRegisterMode" />
     </div>
+    <v-snackbar v-model="showSnackbar" :color="snackbarColor" :timeout="3000">
+      {{ snackbarMessage }}
+      <v-btn color="white" @click="showSnackbar = false">Close</v-btn>
+    </v-snackbar>
   </div>
 </template>
 
@@ -32,10 +36,13 @@ import { defineComponent, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import RegisterModalComponent from './RegisterModalComponent.vue';
+import { VSnackbar, VBtn } from 'vuetify/components';
 
 export default defineComponent({
   components: {
     RegisterModalComponent,
+    VSnackbar,
+    VBtn,
   },
   setup() {
     const authStore = useAuthStore();
@@ -43,16 +50,23 @@ export default defineComponent({
     const password = ref('');
     const router = useRouter();
     const isRegisterMode = ref(false);
+    const showSnackbar = ref(false);
+    const snackbarMessage = ref('');
+    const snackbarColor = ref('success');
 
     const handleLogin = async () => {
       try {
         await authStore.login(username.value, password.value);
         if (authStore.user) {
-          console.log('User logged in:', authStore.user); // Verifica que el usuario está presente
+          snackbarMessage.value = 'User logged in: ' + authStore.user.username;
+          snackbarColor.value = 'success';
+          showSnackbar.value = true;
+          router.push('/home');
         }
-        router.push('/home');
-      } catch (error) {
-        console.error('Login failed');
+      } catch (error: unknown) {
+        snackbarMessage.value = 'Login failed: ' + (error as Error).message;
+        snackbarColor.value = 'error';
+        showSnackbar.value = true;
       }
     };
 
@@ -66,6 +80,9 @@ export default defineComponent({
       handleLogin,
       isRegisterMode,
       toggleRegisterMode,
+      showSnackbar,
+      snackbarMessage,
+      snackbarColor,
     };
   },
 });
@@ -164,7 +181,9 @@ h2 {
   display: flex;
   flex-direction: column;
   align-items: center;
-}.toggle-switch-container label {
+}
+
+.toggle-switch-container label {
   color: black;
 }
 
@@ -215,4 +234,6 @@ input:checked + .slider {
 input:checked + .slider:before {
   transform: translateX(26px);
 }
+
+
 </style>
