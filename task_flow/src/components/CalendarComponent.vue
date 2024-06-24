@@ -68,7 +68,8 @@ import VueCal from 'vue-cal';
 import { VDialog, VCard, VCardTitle, VCardText, VCardActions, VBtn, VSpacer, VSelect, VSnackbar } from 'vuetify/components';
 import { useTaskStore } from '@/stores/task';
 import { useAuthStore } from '@/stores/auth';
-import axios  from 'axios';
+import axios from 'axios';
+import { format, parseISO, addHours, addMinutes } from 'date-fns';
 
 const events = ref<CalendarEvent[]>([]);
 const tasks = ref(['Bienestar', 'Ocio', 'Productividad', 'Tareas']);
@@ -98,8 +99,8 @@ onMounted(async () => {
     try {
       await taskStore.fetchTasks(authStore.user.id);
       events.value = taskStore.tasks.map(task => ({
-        start: new Date(task.startTime),
-        end: new Date(task.endTime),
+        start: parseISO(task.startTime),
+        end: parseISO(task.endTime),
         title: `<b>${task.category}</b><br>${task.title}`,
         category: task.category,
         class: `vuecal__event-category-${task.category}`
@@ -128,7 +129,7 @@ const onCellClick = (day: any) => {
 
   // Redondear la fecha hacia abajo a la hora más cercana
   clickedDate.setMinutes(0, 0, 0);
-  selectedCellDate.value = clickedDate;
+  selectedCellDate.value = new Date(clickedDate.getTime()); // Asegurar que no se modifique la referencia
 
   selectedTask.value = null;
   selectedSubTask.value = null;
@@ -151,12 +152,14 @@ const openSubTaskDialog = () => {
 const closeSubTaskDialog = () => {
   subTaskDialog.value = false;
 };
+
 const saveEvent = async () => {
   try {
     if (selectedCellDate.value && selectedTask.value && selectedSubTask.value) {
       console.log('Saving event with:', { selectedCellDate, selectedTask, selectedSubTask });
       
-      const start = new Date(selectedCellDate.value);
+      // Ajustar la fecha seleccionada para UTC antes de guardar
+      const start = new Date(selectedCellDate.value.getTime() - (selectedCellDate.value.getTimezoneOffset() * 60000));
       const end = new Date(start.getTime() + 60 * 60 * 1000);
       const newTask: Task = {
         id: 0, // O lo que sea apropiado para una nueva tarea
@@ -174,8 +177,8 @@ const saveEvent = async () => {
       console.log('Saved task:', savedTask);
 
       events.value.push({
-        start: new Date(savedTask.startTime),
-        end: new Date(savedTask.endTime),
+        start: parseISO(savedTask.startTime),
+        end: parseISO(savedTask.endTime),
         title: `<b>${savedTask.category}</b><br>${savedTask.title}`,
         category: savedTask.category,
         class: `vuecal__event-category-${savedTask.category}`
@@ -203,10 +206,7 @@ const saveEvent = async () => {
     showErrorSnackbar.value = true;
   }
 };
-
-
 </script>
-
 <style scoped>
 .calendar-wrapper {
   height: 94%;
